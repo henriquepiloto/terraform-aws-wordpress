@@ -1,0 +1,123 @@
+# **Documentação da Infraestrutura AWS para WordPress**
+
+## **1. Arquitetura da Infraestrutura**
+A infraestrutura foi projetada para hospedar o WordPress de maneira **segura, escalável e otimizada** na AWS, utilizando os seguintes serviços:
+
+### **Diagrama da Arquitetura**
+- ECS Fargate executando o contêiner do WordPress.
+- Application Load Balancer (ALB) distribuindo o tráfego.
+- Amazon RDS MySQL como banco de dados gerenciado.
+- AWS Auto Scaling para ECS e RDS.
+- Amazon CloudFront para otimização de conteúdo.
+- AWS WAF para proteção contra ataques.
+- CloudWatch para logs e monitoramento.
+
+## **2. Variáveis do Terraform Utilizadas**
+A infraestrutura foi modularizada, e cada módulo aceita **variáveis configuráveis**, permitindo reutilização de recursos existentes ou criação de novos.
+
+### **Exemplo de Configuração das Variáveis**
+```hcl
+project_name = "wordpress"
+aws_region = "us-east-1"
+
+# Networking
+vpc_id = "vpc-123456"
+public_subnets = ["subnet-abc", "subnet-def"]
+private_subnets = ["subnet-xyz", "subnet-lmn"]
+
+# ECS
+ecs_cluster_id = ""
+task_definition_arn = ""
+ecs_service_name = ""
+
+db_host = ""
+db_user = "admin"
+db_password = "securepassword"
+db_name = "wordpress_db"
+
+ecs_cpu_threshold = 80
+ecs_memory_threshold = 80
+```
+
+## **3. Como Rodar o Terraform**
+A infraestrutura pode ser gerenciada pelo Terraform com os seguintes comandos:
+
+### **Passo 1: Inicializar o Terraform**
+```sh
+terraform init
+```
+
+### **Passo 2: Validar a Configuração**
+```sh
+terraform validate
+```
+
+### **Passo 3: Planejar as Mudanças**
+```sh
+terraform plan
+```
+
+### **Passo 4: Aplicar as Mudanças**
+```sh
+terraform apply -auto-approve
+```
+
+### **Passo 5: Destruir a Infraestrutura (se necessário)**
+```sh
+terraform destroy -auto-approve
+```
+
+## **4. Guia de Troubleshooting**
+
+### **Erro: 'Unsupported argument' em um módulo**
+- Verifique se as variáveis estão corretamente definidas no `variables.tf` do módulo.
+- Confirme se o `source` do módulo está correto no `main.tf`.
+- Execute `terraform validate` para identificar problemas de sintaxe.
+
+### **Erro: Falha na Conexão com o RDS**
+- Verifique o **Security Group** do RDS e permita acesso do ECS.
+- Obtenha o endpoint do banco:
+  ```sh
+  terraform output rds_endpoint
+  ```
+- Teste a conexão manualmente:
+  ```sh
+  mysql -h <rds-endpoint> -u admin -p
+  ```
+
+### **WordPress não carrega via CloudFront**
+- Obtenha o DNS do CloudFront:
+  ```sh
+  terraform output cloudfront_domain_name
+  ```
+- Teste diretamente no navegador e verifique se há erros de configuração.
+- Confirme se a política do **Origin SSL** está configurada corretamente no CloudFront.
+
+## **5. Procedimento de Rollback e Recovery**
+### **Rollback para uma Versão Anterior do Terraform**
+Caso uma versão anterior da infraestrutura precise ser restaurada:
+```sh
+git checkout <commit-id>
+terraform apply -auto-approve
+```
+
+### **Recuperação do Banco de Dados RDS**
+1. **Restaurar um snapshot do RDS**:
+   - Acesse o **Amazon RDS** > Snapshots > Escolha o snapshot > "Restore".
+2. **Atualizar as variáveis do Terraform** com o novo endpoint do banco.
+3. **Reaplicar o Terraform**:
+   ```sh
+   terraform apply -auto-approve
+   ```
+
+### **Recuperação do ECS Fargate**
+Caso o ECS pare de responder:
+```sh
+aws ecs update-service --cluster wordpress-ecs-cluster --service wordpress-service --desired-count 0
+aws ecs update-service --cluster wordpress-ecs-cluster --service wordpress-service --desired-count 2
+```
+
+---
+
+Essa documentação deve ser mantida e atualizada conforme novas implementações forem realizadas na infraestrutura. 🚀
+
