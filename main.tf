@@ -20,3 +20,20 @@ module "networking" {
   # Zonas de disponibilidade onde os recursos serão criados
   availability_zones   = ["us-east-1a", "us-east-1b"]
 }
+module "security" {
+  source      = "./modules/security"
+  project_name = "wordpress"
+  vpc_id      = module.networking.vpc_id
+  alb_sg_id   = ""  # Se existir, informe o ID
+  ecs_sg_id   = ""  # Se existir, informe o ID
+  rds_sg_id   = ""  # Se existir, informe o ID
+}
+
+module "alb" {
+  source      = "./modules/alb"
+  project_name = "wordpress"
+  vpc_id      = module.networking.vpc_id
+  public_subnets = module.networking.public_subnets
+  alb_sg_id   = module.security.alb_sg_id
+  alb_id      = ""  # Se existir, informe o ID
+}
