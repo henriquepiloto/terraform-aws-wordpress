@@ -85,3 +85,53 @@ module "ecs" {
   alb_target_group_arn = module.alb.alb_target_group_arn
   aws_region          = "us-east-1"
 }
+module "autoscaling" {
+  source               = "./modules/autoscaling"
+  project_name         = "wordpress"
+
+  # ECS Auto Scaling
+  ecs_autoscaling_target_id = ""
+  ecs_cluster_name   = module.ecs.ecs_cluster_id
+  ecs_service_name   = module.ecs.ecs_service_name
+  ecs_min_capacity   = 2
+  ecs_max_capacity   = 10
+  ecs_cpu_target     = 60
+  ecs_memory_target  = 70
+
+  # RDS Auto Scaling
+  rds_cluster_id     = ""
+  db_name            = "wordpress_db"
+  db_user            = "admin"
+  db_password        = "supersecurepassword"
+  rds_min_capacity   = 2
+  rds_max_capacity   = 8
+  db_subnet_group_name = module.rds.db_subnet_group_name
+  rds_sg_id          = module.security.rds_sg_id
+}
+module "monitoring" {
+  source               = "./modules/monitoring"
+  project_name         = "wordpress"
+
+  # Logs
+  ecs_log_group_name   = ""
+
+  # Alarmes do ECS
+  ecs_cluster_name     = module.ecs.ecs_cluster_id
+  ecs_service_name     = module.ecs.ecs_service_name
+  ecs_cpu_alarm_name   = ""
+  ecs_memory_alarm_name = ""
+  ecs_cpu_threshold    = 80
+  ecs_memory_threshold = 80
+  alarm_actions        = []  # Adicione um SNS Topic ARN se necessário
+}
+module "waf_cloudfront" {
+  source               = "./modules/waf_cloudfront"
+  project_name         = "wordpress"
+
+  # WAF
+  waf_acl_arn          = ""  # Se já existir um WAF, informe o ARN.
+
+  # CloudFront
+  cloudfront_id        = ""  # Se já existir uma distribuição CloudFront, informe o ID.
+  alb_dns_name         = module.alb.alb_dns_name
+}
